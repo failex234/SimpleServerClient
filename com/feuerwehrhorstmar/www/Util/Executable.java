@@ -1,4 +1,4 @@
-package com.feuerwehrhorstmar.www.Util;
+package com.blogspot.debukkitsblog.Util;
 
 import java.net.Socket;
 
