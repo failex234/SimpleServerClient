@@ -5,9 +5,6 @@ import java.util.ArrayList;
 
 public class Datapackage implements Serializable {
 	
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 3194796995460883469L;
 	
 	ArrayList<Object> memory;
