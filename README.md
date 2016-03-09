@@ -4,12 +4,14 @@ Offers very simple and easy-to-use Java classes for Client-Server-Client or just
 # How to use THE SERVER
 Just make your own class, e. g. MyServer extending Server, simply use the original constructor and implement
 the preStart method. In the preStart method just add
+```java
   registerMethod("IAMANIDENTIFIER", new Executable() {
 			@Override
 			public void run(Datapackage msg, Socket socket) {
 				  doSomethingWith(msg, socket);
 			}
 	});
+```
 for every identifier of an Datapackge the server received, you want to react to.
 
 EXAMPLE: So if you register "Ping" and an Executable repsonding "Pong" to the client, just register
