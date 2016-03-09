@@ -2,6 +2,35 @@
 Offers very simple and easy-to-use Java classes for Client-Server-Client or just Server-Client applications.
 
 # How to use THE SERVER
+```java
+import java.net.Socket;
+
+import com.feuerwehrhorstmar.www.Util.Datapackage;
+import com.feuerwehrhorstmar.www.Util.Executable;
+import com.feuerwehrhorstmar.www.Util.Server;
+
+public class MyServer extends Server {
+
+	public MyServer(int port) {
+		super(port);
+	}
+
+	@Override
+	public void preStart() {
+		registerMethod("Ping", new Executable() {
+			
+			@Override
+			public void run(Datapackage msg, Socket socket) {
+				sendMessage(new Datapackage("REPLY", "Pong"), socket);				
+			}
+		});
+	}
+
+}
+```
+
+
+
 Just make your own class, e. g. MyServer extending Server, simply use the original constructor and implement
 the preStart method. In the preStart method just add
 ```java
@@ -43,6 +72,31 @@ EXAMPLE for a server broadcasting a chat-message to all connected clients:
 
 	
 # How to use THE CLIENT
+```java
+import java.net.Socket;
+
+import com.feuerwehrhorstmar.www.Util.Client;
+import com.feuerwehrhorstmar.www.Util.Datapackage;
+import com.feuerwehrhorstmar.www.Util.Executable;
+
+public class MyClient extends Client {
+
+	public MyClient(String address, int port, int timeout, boolean autoKill) {
+		super(address, port, timeout, autoKill);
+		start();
+		
+		registerMethod("Message", new Executable() {
+			@Override
+			public void run(Datapackage msg, Socket socket) {
+				System.out.println("Look! I got a new message from the server: " + msg.get(1));				
+			}
+		});
+	}
+
+}
+```
+
+
 
 Just make your own class, e. g. MyClient extending Client, simply use the original constructor.
 Whenever you are ready for the client to login, call start(). The client will connect to the server
