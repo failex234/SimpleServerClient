@@ -11,7 +11,6 @@ import java.util.HashMap;
 /**
  * A very simple Server class for Java network applications
  * @author Leonard Bienbeck
- * @version 1.0.0
  * created on 09.03.2016 in Horstmar, NRW, Germany
  */
 public abstract class Server {
@@ -34,15 +33,32 @@ public abstract class Server {
 		clients = new ArrayList<Socket>();
 		this.port = port;
 		
+		registerMethod("LOGIN", new Executable() {
+			@Override
+			public void run(Datapackage msg, Socket socket) {
+				registerClient(socket);
+				onClientRegistered();
+			}
+		});
+		
 		preStart();
 		
 		start();
 	}
 	
-	
+	/**
+	 * Executed while constructing the Server instance,<br>
+	 * just before listening to data from the network starts.
+	 */
 	public abstract void preStart();
 	
-	
+	/**
+	 * Overwrite this method to react on a client registered (logged in)<br>
+	 * to the server. That happens always, when a Datapackage<br>
+	 * with identifier <i>LOGIN</i> is received from a client.
+	 */
+	public void onClientRegistered(){
+	}
 	
 	private void startListening(){
 		if(listeningThread == null && server != null){
@@ -150,7 +166,13 @@ public abstract class Server {
 	 * @param executable The Executable to be executed on arriving identifier
 	 */
 	public void registerMethod(String identifier, Executable executable){
-		idMethods.put(identifier, executable);
+		if(!identifier.equalsIgnoreCase("LOGIN")){
+			idMethods.put(identifier, executable);
+		} else {
+			throw new IllegalArgumentException("Identifier may not be 'LOGIN'. "
+					+ "Since v1.0.1 the server automatically registers new clients. "
+					+ "To react on new client registed, use the onClientRegisters() Listener by overwriting it.");
+		}
 	}
 	
 	/**
