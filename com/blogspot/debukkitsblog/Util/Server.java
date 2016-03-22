@@ -33,14 +33,7 @@ public abstract class Server {
 		clients = new ArrayList<Socket>();
 		this.port = port;
 		
-		registerMethod("LOGIN", new Executable() {
-			@Override
-			public void run(Datapackage msg, Socket socket) {
-				registerClient(socket);
-				onClientRegistered();
-			}
-		});
-		
+		registerLoginMethod();
 		preStart();
 		
 		start();
@@ -166,13 +159,23 @@ public abstract class Server {
 	 * @param executable The Executable to be executed on arriving identifier
 	 */
 	public void registerMethod(String identifier, Executable executable){
-		if(!identifier.equalsIgnoreCase("LOGIN")){
-			idMethods.put(identifier, executable);
-		} else {
+		if(identifier.equalsIgnoreCase("LOGIN")){
 			throw new IllegalArgumentException("Identifier may not be 'LOGIN'. "
 					+ "Since v1.0.1 the server automatically registers new clients. "
 					+ "To react on new client registed, use the onClientRegisters() Listener by overwriting it.");
+		} else {
+			idMethods.put(identifier, executable);
 		}
+	}
+	
+	private void registerLoginMethod(){
+		idMethods.put("LOGIN", new Executable() {
+			@Override
+			public void run(Datapackage msg, Socket socket) {
+				registerClient(socket);
+				onClientRegistered();
+			}
+		});
 	}
 	
 	/**
