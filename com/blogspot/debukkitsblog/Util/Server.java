@@ -53,6 +53,14 @@ public abstract class Server {
 	public void onClientRegistered(){
 	}
 	
+	/**
+	 * Overwrite this method to react on a client registered (logged in)<br>
+	 * to the server. That happens always, when a Datapackage<br>
+	 * with identifier <i>LOGIN</i> is received from a client.
+	 */
+	public void onClientRegistered(Datapackage msg, Socket socket){
+	}
+	
 	private void startListening(){
 		if(listeningThread == null && server != null){
 			listeningThread = new Thread(new Runnable(){
@@ -116,7 +124,7 @@ public abstract class Server {
 			out.writeObject(message);
 		} catch (Exception e){
 			System.err.println("[SendMessage] Fehler: " + e.getMessage());
-			//Bei Fehler: Socket aus Liste löschen
+			//Bei Fehler: Socket aus Liste loeschen
 			if(toBeDeleted != null){
 				toBeDeleted.add(socket);
 			} else {
@@ -142,7 +150,7 @@ public abstract class Server {
 			sendMessage(message, current);
 		}
 		
-		//Alle Sockets, die fehlerhaft waren, im Anschluss löschen
+		//Alle Sockets, die fehlerhaft waren, im Anschluss loeschen
 		for(Socket current : toBeDeleted){
 			clients.remove(current);
 		}
@@ -173,6 +181,7 @@ public abstract class Server {
 			@Override
 			public void run(Datapackage msg, Socket socket) {
 				registerClient(socket);
+				onClientRegistered(msg, socket);
 				onClientRegistered();
 			}
 		});
