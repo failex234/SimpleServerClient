@@ -201,16 +201,16 @@ public abstract class Server {
 
 		try {
 			server = new ServerSocket(port);
-            System.out.println("[Server] Trying to resolve (remote) Address");
-            try {
-                BufferedReader in = new BufferedReader(
-                        new InputStreamReader(new URL("http://bot.whatismyipaddress.com/").openStream())
-                );
-                System.out.println("[Server] Bound to Address " + in.readLine() + ":" + server.getLocalPort());
-            } catch (UnknownHostException e) {
-                System.err.println("Error detecting Address");
-                e.printStackTrace();
-            }
+			System.out.println("[Server] Trying to resolve (remote) Address");
+			try {
+				BufferedReader in = new BufferedReader(
+					new InputStreamReader(new URL("http://bot.whatismyipaddress.com/").openStream())
+				);
+				System.out.println("[Server] Bound to Address " + in.readLine() + ":" + server.getLocalPort());
+			} catch (UnknownHostException e) {
+				System.err.println("Error detecting Address");
+				e.printStackTrace();
+			}
 		} catch (IOException e) {
 			System.err.println("Error opening ServerSocket");
 			e.printStackTrace();
