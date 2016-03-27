@@ -16,16 +16,13 @@ import java.util.HashMap;
  */
 public class Client {
 
-	Socket loginSocket;
-	InetSocketAddress address;
-	int timeout;
-	
-	Thread listeningThread;
-	HashMap<String, Executable> idMethods = new HashMap<String, Executable>();
-		
-	int errorCount;
-	
-	boolean autoKill = false;
+	private Socket loginSocket;
+    private InetSocketAddress address;
+    private int timeout;
+    private Thread listeningThread;
+    private HashMap<String, Executable> idMethods = new HashMap<String, Executable>();
+    private int errorCount;
+    private boolean autoKill = false;
 	
 	/**
 	 * Builds a network client. To login and start listening call <b>start()</b><br>

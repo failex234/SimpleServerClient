@@ -1,10 +1,10 @@
 package com.blogspot.debukkitsblog.Util;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -15,13 +15,11 @@ import java.util.HashMap;
  */
 public abstract class Server {
 	
-	HashMap<String, Executable> idMethods = new HashMap<String, Executable>();
-	
-	ServerSocket server;
-	int port;
-	ArrayList<Socket> clients;
-	
-	Thread listeningThread;
+	private HashMap<String, Executable> idMethods = new HashMap<String, Executable>();
+	private ServerSocket server;
+	private int port;
+	private ArrayList<Socket> clients;
+	private Thread listeningThread;
 	
 	/**
 	 * Executed the preStart()-Method,<br>
@@ -196,9 +194,23 @@ public abstract class Server {
 	}
 	
 	private void start(){
-		server = null;
+		if(server != null){
+            stop();
+        }
+        server = null;
+
 		try {
 			server = new ServerSocket(port);
+            System.out.println("[Server] Trying to resolve (remote) Address");
+            try {
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(new URL("http://bot.whatismyipaddress.com/").openStream())
+                );
+                System.out.println("[Server] Bound to Address " + in.readLine() + ":" + server.getLocalPort());
+            } catch (UnknownHostException e) {
+                System.err.println("Error detecting Address");
+                e.printStackTrace();
+            }
 		} catch (IOException e) {
 			System.err.println("Error opening ServerSocket");
 			e.printStackTrace();
