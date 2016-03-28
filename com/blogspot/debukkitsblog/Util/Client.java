@@ -140,9 +140,9 @@ public class Client {
 					} catch(Exception ex){					
 						if(ex.getMessage().equals("Connection reset")){
 							onConnectionProblem();
-							System.err.println("Server offline.");							
+							System.err.println("[WARNING] Server offline.");
 							if((++errorCount > 30) && autoKill){
-								System.err.println("Server dauerhaft nicht erreichbar, beende.");
+								System.err.println("[ERROR] Server dauerhaft nicht erreichbar, beende.");
 								System.exit(0);
 							} else {
 								repairConnection();

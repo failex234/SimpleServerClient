@@ -20,6 +20,7 @@ public abstract class Server {
 	private int port;
 	private ArrayList<Socket> clients;
 	private Thread listeningThread;
+	private boolean silentMode = false;
 	
 	/**
 	 * Executed the preStart()-Method,<br>
@@ -28,7 +29,7 @@ public abstract class Server {
 	 * @param port the server shall work on
 	 */
 	public Server(int port){
-		clients = new ArrayList<Socket>();
+		this.clients = new ArrayList<Socket>();
 		this.port = port;
 		
 		registerLoginMethod();
@@ -68,7 +69,9 @@ public abstract class Server {
 					while(server != null){
 						
 						try {
-							System.out.println("[Server] Waiting for connection...");
+							if(!silentMode) {
+								System.out.println("[Server] Waiting for Packages...");
+							}
 							final Socket tempSocket = server.accept();
 							
 							ObjectInputStream ois = new ObjectInputStream(tempSocket.getInputStream());
@@ -76,11 +79,15 @@ public abstract class Server {
 							
 							if(raw instanceof Datapackage){
 								final Datapackage msg = (Datapackage) raw;
-								System.out.println("[Server] Message received: " + msg);
+								if(!silentMode){
+									System.out.println("[Server] Package received: " + msg);
+								}
 								
 								for(final String current : idMethods.keySet()){
 									if(msg.id().equalsIgnoreCase(current)){
-										System.out.println("[Server] Executing method for identifier '" + msg.id() + "'");
+										if(!silentMode) {
+											System.out.println("[Server] Executing method for identifier '" + msg.id() + "'");
+										}
 										new Thread(new Runnable(){
 											public void run(){
 												idMethods.get(current).run(msg, tempSocket);
@@ -168,7 +175,7 @@ public abstract class Server {
 		if(identifier.equalsIgnoreCase("LOGIN")){
 			throw new IllegalArgumentException("Identifier may not be 'LOGIN'. "
 					+ "Since v1.0.1 the server automatically registers new clients. "
-					+ "To react on new client registed, use the onClientRegisters() Listener by overwriting it.");
+					+ "To react on new client registed, use the onClientRegisterd() Listener by overwriting it.");
 		} else {
 			idMethods.put(identifier, executable);
 		}
@@ -178,6 +185,9 @@ public abstract class Server {
 		idMethods.put("LOGIN", new Executable() {
 			@Override
 			public void run(Datapackage msg, Socket socket) {
+				// Output Information
+				System.out.println("[Server] Got new connection from a Client. (IP: " + socket.getRemoteSocketAddress().toString().substring(1) + ")");
+
 				registerClient(socket);
 				onClientRegistered(msg, socket);
 				onClientRegistered();
@@ -242,4 +252,12 @@ public abstract class Server {
 		return clients.size();
 	}
 
+
+	/**
+	 * Enables/Disables the SilentMode for the Server (less output)
+	 * @param silentMode Indicates if SilentMode should be enabled or not
+	 */
+	public void setSilentMode(boolean silentMode) {
+		this.silentMode = silentMode;
+	}
 }
