@@ -195,9 +195,9 @@ public abstract class Server {
 	
 	private void start(){
 		if(server != null){
-            stop();
-        }
-        server = null;
+			stop();
+		}
+		server = null;
 
 		try {
 			server = new ServerSocket(port);
