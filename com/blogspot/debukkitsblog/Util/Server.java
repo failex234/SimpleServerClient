@@ -1,10 +1,7 @@
 package com.blogspot.debukkitsblog.Util;
 
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.URL;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -15,7 +12,7 @@ import java.util.HashMap;
  */
 public abstract class Server {
 	
-	private HashMap<String, Executable> idMethods = new HashMap<String, Executable>();
+	private HashMap<String, Executable> idMethods = new HashMap<>();
 	private ServerSocket server;
 	private int port;
 	private ArrayList<Socket> clients;
@@ -62,54 +59,35 @@ public abstract class Server {
 	
 	private void startListening(){
 		if(listeningThread == null && server != null){
-			listeningThread = new Thread(new Runnable(){
+			listeningThread = new Thread(() -> {
+				while (server != null) {
+					try {
+						if (!silentMode) System.out.println("[Server] Waiting for Packages...");
+						final Socket tempSocket = server.accept();
 
-				@Override
-				public void run() {
-					while(server != null){
-						
-						try {
-							if(!silentMode) {
-								System.out.println("[Server] Waiting for Packages...");
-							}
-							final Socket tempSocket = server.accept();
-							
-							ObjectInputStream ois = new ObjectInputStream(tempSocket.getInputStream());
-							Object raw = ois.readObject();
-							
-							if(raw instanceof Datapackage){
-								final Datapackage msg = (Datapackage) raw;
-								if(!silentMode){
-									System.out.println("[Server] Package received: " + msg);
+						ObjectInputStream ois = new ObjectInputStream(tempSocket.getInputStream());
+						Object raw = ois.readObject();
+
+						if (raw instanceof Datapackage) {
+							final Datapackage msg = (Datapackage) raw;
+							if (!silentMode) System.out.println("[Server] Package received: " + msg);
+
+							for (final String current : idMethods.keySet()) {
+								if (msg.id().equalsIgnoreCase(current)) {
+									if (!silentMode) System.out.println("[Server] Executing method for identifier '" + msg.id() + "'");
+									new Thread(() -> {idMethods.get(current).run(msg, tempSocket);}).start();
+									break;
 								}
-								
-								for(final String current : idMethods.keySet()){
-									if(msg.id().equalsIgnoreCase(current)){
-										if(!silentMode) {
-											System.out.println("[Server] Executing method for identifier '" + msg.id() + "'");
-										}
-										new Thread(new Runnable(){
-											public void run(){
-												idMethods.get(current).run(msg, tempSocket);
-											}
-										}).start();
-										break;
-									}
-								}
-																
 							}
-							
-						} catch (IOException e) {
-							e.printStackTrace();
-						} catch (ClassNotFoundException e) {
-							e.printStackTrace();
 						}
-						
+					} catch (IOException e) {
+						e.printStackTrace();
+					} catch (ClassNotFoundException e) {
+						e.printStackTrace();
 					}
 				}
-			
 			});
-		
+
 			listeningThread.start();
 		}
 	}
@@ -182,16 +160,13 @@ public abstract class Server {
 	}
 	
 	private void registerLoginMethod(){
-		idMethods.put("LOGIN", new Executable() {
-			@Override
-			public void run(Datapackage msg, Socket socket) {
-				// Output Information
-				System.out.println("[Server] Got new connection from a Client. (IP: " + socket.getRemoteSocketAddress().toString().substring(1) + ")");
+		idMethods.put("LOGIN", (Datapackage msg, Socket socket) -> {
+			// Output Information
+			System.out.println("[Server] Got new connection from a Client. (IP: " + socket.getRemoteSocketAddress().toString().substring(1) + ")");
 
-				registerClient(socket);
-				onClientRegistered(msg, socket);
-				onClientRegistered();
-			}
+			registerClient(socket);
+			onClientRegistered(msg, socket);
+			onClientRegistered();
 		});
 	}
 	
