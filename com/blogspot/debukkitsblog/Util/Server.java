@@ -106,7 +106,7 @@ public abstract class Server {
 			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
 			out.writeObject(message);
 		} catch (Exception e){
-			System.err.println("[SendMessage] Fehler: " + e.getMessage());
+			System.err.println("[SendMessage] Error: " + e.getMessage());
 			//Bei Fehler: Socket aus Liste loeschen
 			if(toBeDeleted != null){
 				toBeDeleted.add(socket);
@@ -162,7 +162,7 @@ public abstract class Server {
 	private void registerLoginMethod(){
 		idMethods.put("LOGIN", (Datapackage msg, Socket socket) -> {
 			// Output Information
-			System.out.println("[Server] Got new connection from a Client. (IP: " + socket.getRemoteSocketAddress().toString().substring(1) + ")");
+			System.out.println("[Server] New client registered, IP: " + socket.getRemoteSocketAddress().toString().substring(1));
 
 			registerClient(socket);
 			onClientRegistered(msg, socket);
@@ -186,7 +186,7 @@ public abstract class Server {
 
 		try {
 			server = new ServerSocket(port);
-			System.out.println("[Server] Trying to resolve (remote) Address");
+			if (!silentMode) System.out.println("[Server] Trying to resolve (remote) Address");
 			try {
 				BufferedReader in = new BufferedReader(
 					new InputStreamReader(new URL("http://bot.whatismyipaddress.com/").openStream())
