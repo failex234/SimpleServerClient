@@ -1,10 +1,7 @@
 package com.blogspot.debukkitsblog.Util;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.InetSocketAddress;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
 import java.nio.channels.AlreadyConnectedException;
 import java.util.HashMap;
 
@@ -16,16 +13,13 @@ import java.util.HashMap;
  */
 public class Client {
 
-	Socket loginSocket;
-	InetSocketAddress address;
-	int timeout;
-	
-	Thread listeningThread;
-	HashMap<String, Executable> idMethods = new HashMap<String, Executable>();
-		
-	int errorCount;
-	
-	boolean autoKill = false;
+	private Socket loginSocket;
+	private InetSocketAddress address;
+	private int timeout;
+	private Thread listeningThread;
+	private HashMap<String, Executable> idMethods = new HashMap<String, Executable>();
+	private int errorCount;
+	private boolean autoKill = false;
 	
 	/**
 	 * Builds a network client. To login and start listening call <b>start()</b><br>
@@ -95,77 +89,64 @@ public class Client {
 		if(listeningThread != null && listeningThread.isAlive()){
 			return;
 		}
-		
-		listeningThread = new Thread(new Runnable(){
-			@Override
-			public void run() {
-				
-				//Wiederhole ständig die Prozedur:
-				while(true){
-					try{
-						//Bei fehlerhafter Verbindung, diese reparieren
-						if(loginSocket != null && !loginSocket.isConnected()){
-							while(!loginSocket.isConnected()){
-								repairConnection();
-								if(loginSocket.isConnected()){
-									break; //diese, kleinere, innere while-Schleife! -- nicht while(true)
-								}
-								
-								Thread.sleep(5000);
-								repairConnection();
+
+		listeningThread = new Thread(() -> {
+			//Wiederhole ständig die Prozedur:
+			while(true){
+				try{
+					//Bei fehlerhafter Verbindung, diese reparieren
+					if(loginSocket != null && !loginSocket.isConnected()){
+						while(!loginSocket.isConnected()){
+							repairConnection();
+							if(loginSocket.isConnected()){
+								break; //diese, kleinere, innere while-Schleife! -- nicht while(true)
 							}
-						}
-						
-						onConnectionGood();
-						
-						//Auf eingehende Nachricht warten und diese bei Eintreffen lesen
-						ObjectInputStream ois = new ObjectInputStream(loginSocket.getInputStream());
-						Object raw = ois.readObject();
-						
-						//Nachricht auswerten
-						if(raw instanceof Datapackage){
-							final Datapackage msg = (Datapackage) raw;
-							
-							for(final String current : idMethods.keySet()){
-								if(msg.id().equalsIgnoreCase(current)){
-									System.out.println("[Client] Message received. Executing method for '" + msg.id() + "'...");
-									new Thread(new Runnable(){
-										public void run(){
-											idMethods.get(current).run(msg, loginSocket);
-										}
-									}).start();
-									break;
-								}
-							}
-															
-						}
-						
-					} catch(Exception ex){					
-						if(ex.getMessage().equals("Connection reset")){
-							onConnectionProblem();
-							System.err.println("Server offline.");							
-							if((++errorCount > 30) && autoKill){
-								System.err.println("Server dauerhaft nicht erreichbar, beende.");
-								System.exit(0);
-							} else {
-								repairConnection();
-							}							
-						} else {
-							ex.printStackTrace();
+
+							Thread.sleep(5000);
+							repairConnection();
 						}
 					}
-					
-					//Bis hieher fehlerfrei? Dann errorCount auf Null setzen:
-					errorCount = 0;
-					
-				} //while true
-				
-			}//run			
+
+					onConnectionGood();
+
+					//Auf eingehende Nachricht warten und diese bei Eintreffen lesen
+					ObjectInputStream ois = new ObjectInputStream(loginSocket.getInputStream());
+					Object raw = ois.readObject();
+
+					//Nachricht auswerten
+					if(raw instanceof Datapackage) {
+						final Datapackage msg = (Datapackage) raw;
+
+						for (final String current : idMethods.keySet()) {
+							if (msg.id().equalsIgnoreCase(current)) {
+								System.out.println("[Client] Message received. Executing method for '" + msg.id() + "'...");
+								new Thread(() -> {idMethods.get(current).run(msg, loginSocket);}).start();
+								break;
+							}
+						}
+					}
+				} catch(Exception ex){
+					if(ex.getMessage().equals("Connection reset")){
+						onConnectionProblem();
+						System.err.println("[WARNING] Server offline.");
+						if((++errorCount > 30) && autoKill){
+							System.err.println("[ERROR] Server dauerhaft nicht erreichbar, beende.");
+							System.exit(0);
+						} else {
+							repairConnection();
+						}
+					} else {
+						ex.printStackTrace();
+					}
+				}
+
+				//Bis hieher fehlerfrei? Dann errorCount auf Null setzen:
+				errorCount = 0;
+			} //while true
 		});
-		
+
 		//Thread starten
 		listeningThread.start();
-			
 	}
 	
 	/**
