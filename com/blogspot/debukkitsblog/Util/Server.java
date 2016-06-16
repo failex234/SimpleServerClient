@@ -1,7 +1,10 @@
 package com.blogspot.debukkitsblog.Util;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -12,27 +15,42 @@ import java.util.HashMap;
  */
 public abstract class Server {
 	
-	private HashMap<String, Executable> idMethods = new HashMap<>();
+	private HashMap<String, Executable> idMethods = new HashMap<String, Executable>();
+	
 	private ServerSocket server;
 	private int port;
 	private ArrayList<Socket> clients;
+	
 	private Thread listeningThread;
-	private boolean silentMode = false;
+	private Thread pingThread;
+	
+	boolean autoRegisterEveryClient;
 	
 	/**
 	 * Executed the preStart()-Method,<br>
 	 * creates a Server on <i>port</i><br>
 	 * and starts the listening loop on its own thread.
 	 * @param port the server shall work on
+	 * @param autoRegisterEveryClient wether every clients connecting<br>
+	 * shall be registered or not
+	 * @param wether the server shall try everything to keep the<br>
+	 * connection alive by sending a little datapackage every 30 seconds
 	 */
-	public Server(int port){
+	public Server(int port, boolean autoRegisterEveryClient, boolean keepConnectionAlive){
 		this.clients = new ArrayList<Socket>();
 		this.port = port;
+		this.autoRegisterEveryClient = autoRegisterEveryClient;
 		
-		registerLoginMethod();
+		if (autoRegisterEveryClient) {
+			registerLoginMethod();
+		}
 		preStart();
 		
 		start();
+		
+		if (keepConnectionAlive){
+			startPingThread();
+		}
 	}
 	
 	/**
@@ -44,7 +62,7 @@ public abstract class Server {
 	/**
 	 * Overwrite this method to react on a client registered (logged in)<br>
 	 * to the server. That happens always, when a Datapackage<br>
-	 * with identifier <i>LOGIN</i> is received from a client.
+	 * with identifier <i>_INTERNAL_LOGIN_</i> is received from a client.
 	 */
 	public void onClientRegistered(){
 	}
@@ -52,42 +70,78 @@ public abstract class Server {
 	/**
 	 * Overwrite this method to react on a client registered (logged in)<br>
 	 * to the server. That happens always, when a Datapackage<br>
-	 * with identifier <i>LOGIN</i> is received from a client.
+	 * with identifier <i>_INTERNAL_LOGIN_</i> is received from a client.
 	 */
 	public void onClientRegistered(Datapackage msg, Socket socket){
 	}
 	
+	/**
+	 * Called whenever a bad or erroneous socket is removed<br>
+	 * from the ArrayList of registered sockets.
+	 * @param socket The socket that has been removed from the list
+	 */
+	public void onSocketRemoved(Socket socket){
+	}
+	
+	private void startPingThread(){
+		pingThread = new Thread(new Runnable(){
+			@Override
+			public void run() {
+				
+				while(server != null){
+					try { Thread.sleep(30 * 1000); } catch (InterruptedException e) {}
+					broadcastMessage(new Datapackage("_INTERNAL_PING_", "OK"));					
+				}
+				
+			}			
+		});
+		pingThread.start();
+	}
+	
 	private void startListening(){
 		if(listeningThread == null && server != null){
-			listeningThread = new Thread(() -> {
-				while (server != null) {
-					try {
-						if (!silentMode) System.out.println("[Server] Waiting for Packages...");
-						final Socket tempSocket = server.accept();
+			listeningThread = new Thread(new Runnable(){
 
-						ObjectInputStream ois = new ObjectInputStream(tempSocket.getInputStream());
-						Object raw = ois.readObject();
-
-						if (raw instanceof Datapackage) {
-							final Datapackage msg = (Datapackage) raw;
-							if (!silentMode) System.out.println("[Server] Package received: " + msg);
-
-							for (final String current : idMethods.keySet()) {
-								if (msg.id().equalsIgnoreCase(current)) {
-									if (!silentMode) System.out.println("[Server] Executing method for identifier '" + msg.id() + "'");
-									new Thread(() -> {idMethods.get(current).run(msg, tempSocket);}).start();
-									break;
+				@Override
+				public void run() {
+					while(server != null){
+						
+						try {
+							System.out.println("[Server] Waiting for connection...");
+							final Socket tempSocket = server.accept();
+							
+							ObjectInputStream ois = new ObjectInputStream(tempSocket.getInputStream());
+							Object raw = ois.readObject();
+							
+							if(raw instanceof Datapackage){
+								final Datapackage msg = (Datapackage) raw;
+								System.out.println("[Server] Message received: " + msg);
+								
+								for(final String current : idMethods.keySet()){
+									if(msg.id().equalsIgnoreCase(current)){
+										System.out.println("[Server] Executing method for identifier '" + msg.id() + "'");
+										new Thread(new Runnable(){
+											public void run(){
+												idMethods.get(current).run(msg, tempSocket);
+											}
+										}).start();
+										break;
+									}
 								}
+																
 							}
+							
+						} catch (IOException e) {
+							e.printStackTrace();
+						} catch (ClassNotFoundException e) {
+							e.printStackTrace();
 						}
-					} catch (IOException e) {
-						e.printStackTrace();
-					} catch (ClassNotFoundException e) {
-						e.printStackTrace();
+						
 					}
 				}
+			
 			});
-
+		
 			listeningThread.start();
 		}
 	}
@@ -106,12 +160,14 @@ public abstract class Server {
 			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
 			out.writeObject(message);
 		} catch (Exception e){
-			System.err.println("[SendMessage] Error: " + e.getMessage());
+			System.err.println("[SendMessage] Fehler: " + e.getMessage());
+			
 			//Bei Fehler: Socket aus Liste loeschen
 			if(toBeDeleted != null){
 				toBeDeleted.add(socket);
 			} else {
 				clients.remove(socket);
+				onSocketRemoved(socket);
 			}
 		}
 	}
@@ -136,6 +192,7 @@ public abstract class Server {
 		//Alle Sockets, die fehlerhaft waren, im Anschluss loeschen
 		for(Socket current : toBeDeleted){
 			clients.remove(current);
+			onSocketRemoved(current);
 		}
 		
 		toBeDeleted = null;
@@ -150,23 +207,23 @@ public abstract class Server {
 	 * @param executable The Executable to be executed on arriving identifier
 	 */
 	public void registerMethod(String identifier, Executable executable){
-		if(identifier.equalsIgnoreCase("LOGIN")){
-			throw new IllegalArgumentException("Identifier may not be 'LOGIN'. "
+		if(identifier.equalsIgnoreCase("_INTERNAL_LOGIN_") && autoRegisterEveryClient){
+			throw new IllegalArgumentException("Identifier may not be '_INTERNAL_LOGIN_'. "
 					+ "Since v1.0.1 the server automatically registers new clients. "
-					+ "To react on new client registed, use the onClientRegisterd() Listener by overwriting it.");
+					+ "To react on new client registed, use the onClientRegisters() Listener by overwriting it.");
 		} else {
 			idMethods.put(identifier, executable);
 		}
 	}
 	
 	private void registerLoginMethod(){
-		idMethods.put("LOGIN", (Datapackage msg, Socket socket) -> {
-			// Output Information
-			System.out.println("[Server] New client registered, IP: " + socket.getRemoteSocketAddress().toString().substring(1));
-
-			registerClient(socket);
-			onClientRegistered(msg, socket);
-			onClientRegistered();
+		idMethods.put("_INTERNAL_LOGIN_", new Executable() {
+			@Override
+			public void run(Datapackage msg, Socket socket) {
+				registerClient(socket);
+				onClientRegistered(msg, socket);
+				onClientRegistered();
+			}
 		});
 	}
 	
@@ -179,23 +236,9 @@ public abstract class Server {
 	}
 	
 	private void start(){
-		if(server != null){
-			stop();
-		}
 		server = null;
-
 		try {
 			server = new ServerSocket(port);
-			if (!silentMode) System.out.println("[Server] Trying to resolve (remote) Address");
-			try {
-				BufferedReader in = new BufferedReader(
-					new InputStreamReader(new URL("http://bot.whatismyipaddress.com/").openStream())
-				);
-				System.out.println("[Server] Bound to Address " + in.readLine() + ":" + server.getLocalPort());
-			} catch (UnknownHostException e) {
-				System.err.println("Error detecting Address");
-				e.printStackTrace();
-			}
 		} catch (IOException e) {
 			System.err.println("Error opening ServerSocket");
 			e.printStackTrace();
@@ -227,12 +270,4 @@ public abstract class Server {
 		return clients.size();
 	}
 
-
-	/**
-	 * Enables/Disables the SilentMode for the Server (less output)
-	 * @param silentMode Indicates if SilentMode should be enabled or not
-	 */
-	public void setSilentMode(boolean silentMode) {
-		this.silentMode = silentMode;
-	}
 }
