@@ -1,14 +1,16 @@
 package com.blogspot.debukkitsblog.Util;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.channels.AlreadyConnectedException;
 import java.util.HashMap;
 
 /**
  * A very simple Client class for Java network applications
  * @author Leonard Bienbeck
- * @version 1.0.0
  * created on 09.03.2016 in Horstmar, NRW, Germany
  */
 public class Client {
@@ -16,9 +18,12 @@ public class Client {
 	private Socket loginSocket;
 	private InetSocketAddress address;
 	private int timeout;
+	
 	private Thread listeningThread;
 	private HashMap<String, Executable> idMethods = new HashMap<String, Executable>();
+		
 	private int errorCount;
+	
 	private boolean autoKill = false;
 	
 	/**
@@ -76,8 +81,9 @@ public class Client {
 		try{
 			System.out.println("[Client] Logging in...");
 			ObjectOutputStream out = new ObjectOutputStream(loginSocket.getOutputStream());
-			out.writeObject(new Datapackage("LOGIN", "HELO"));
+			out.writeObject(new Datapackage("_INTERNAL_LOGIN_", "HELO"));
 			System.out.println("[Client] Logged in.");
+			onReconnect();
 		} catch(IOException ex){
 			System.err.println("[Client] Login failed.");
 		}		
@@ -89,64 +95,77 @@ public class Client {
 		if(listeningThread != null && listeningThread.isAlive()){
 			return;
 		}
-
-		listeningThread = new Thread(() -> {
-			//Wiederhole ständig die Prozedur:
-			while(true){
-				try{
-					//Bei fehlerhafter Verbindung, diese reparieren
-					if(loginSocket != null && !loginSocket.isConnected()){
-						while(!loginSocket.isConnected()){
-							repairConnection();
-							if(loginSocket.isConnected()){
-								break; //diese, kleinere, innere while-Schleife! -- nicht while(true)
-							}
-
-							Thread.sleep(5000);
-							repairConnection();
-						}
-					}
-
-					onConnectionGood();
-
-					//Auf eingehende Nachricht warten und diese bei Eintreffen lesen
-					ObjectInputStream ois = new ObjectInputStream(loginSocket.getInputStream());
-					Object raw = ois.readObject();
-
-					//Nachricht auswerten
-					if(raw instanceof Datapackage) {
-						final Datapackage msg = (Datapackage) raw;
-
-						for (final String current : idMethods.keySet()) {
-							if (msg.id().equalsIgnoreCase(current)) {
-								System.out.println("[Client] Message received. Executing method for '" + msg.id() + "'...");
-								new Thread(() -> {idMethods.get(current).run(msg, loginSocket);}).start();
-								break;
+		
+		listeningThread = new Thread(new Runnable(){
+			@Override
+			public void run() {
+				
+				//Wiederhole staendig die Prozedur:
+				while(true){
+					try{
+						//Bei fehlerhafter Verbindung, diese reparieren
+						if(loginSocket != null && !loginSocket.isConnected()){
+							while(!loginSocket.isConnected()){
+								repairConnection();
+								if(loginSocket.isConnected()){
+									break; //diese, kleinere, innere while-Schleife! -- nicht while(true)
+								}
+								
+								Thread.sleep(5000);
+								repairConnection();
 							}
 						}
-					}
-				} catch(Exception ex){
-					if(ex.getMessage().equals("Connection reset")){
-						onConnectionProblem();
-						System.err.println("[WARNING] Server offline.");
-						if((++errorCount > 30) && autoKill){
-							System.err.println("[ERROR] Server dauerhaft nicht erreichbar, beende.");
-							System.exit(0);
+						
+						onConnectionGood();
+						
+						//Auf eingehende Nachricht warten und diese bei Eintreffen lesen
+						ObjectInputStream ois = new ObjectInputStream(loginSocket.getInputStream());
+						Object raw = ois.readObject();
+						
+						//Nachricht auswerten
+						if(raw instanceof Datapackage){
+							final Datapackage msg = (Datapackage) raw;
+							
+							for(final String current : idMethods.keySet()){
+								if(msg.id().equalsIgnoreCase(current)){
+									System.out.println("[Client] Message received. Executing method for '" + msg.id() + "'...");
+									new Thread(new Runnable(){
+										public void run(){
+											idMethods.get(current).run(msg, loginSocket);
+										}
+									}).start();
+									break;
+								}
+							}
+															
+						}
+						
+					} catch(Exception ex){	
+						if(ex != null && ex.getMessage().equals("Connection reset")){
+							onConnectionProblem();
+							System.err.println("Server offline.");							
+							if((++errorCount > 30) && autoKill){
+								System.err.println("Server dauerhaft nicht erreichbar, beende.");
+								System.exit(0);
+							} else {
+								repairConnection();
+							}							
 						} else {
-							repairConnection();
+							ex.printStackTrace();
 						}
-					} else {
-						ex.printStackTrace();
 					}
-				}
-
-				//Bis hieher fehlerfrei? Dann errorCount auf Null setzen:
-				errorCount = 0;
-			} //while true
+					
+					//Bis hieher fehlerfrei? Dann errorCount auf Null setzen:
+					errorCount = 0;
+					
+				} //while true
+				
+			}//run			
 		});
-
+		
 		//Thread starten
 		listeningThread.start();
+			
 	}
 	
 	/**
@@ -212,13 +231,21 @@ public class Client {
 	}
 	
 	/**
-	 * Called when the server is disconnected and repairing of the connection (reconnect) starts
+	 * Called when the server is disconnected and repairing of the connection (reconnect) starts.<br>
+	 * Warning: This method is executed on the main networking thread!
 	 */
 	public void onConnectionProblem(){ }
 	
 	/**
-	 * Called when (re)connection to the server and waiting for an incoming message starts
+	 * Called when (re)connection to the server and waiting for an incoming message starts.<br>
+	 * Warning: This method is executed on the main networking thread!
 	 */
 	public void onConnectionGood(){ }
+	
+	/**
+	 * Called when the client logges in to the server for the first time.<br>
+	 * Warning: This method is executed on the main networking thread!
+	 */
+	public void onReconnect(){ }
 	
 }
