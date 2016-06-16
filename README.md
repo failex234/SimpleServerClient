@@ -5,23 +5,22 @@ Offers very simple and easy-to-use Java classes for Client-Server-Client or just
 ```java
 import java.net.Socket;
 
-import com.feuerwehrhorstmar.www.Util.Datapackage;
-import com.feuerwehrhorstmar.www.Util.Executable;
-import com.feuerwehrhorstmar.www.Util.Server;
+import com.blogspot.debukkitsblog.Util.Datapackage;
+import com.blogspot.debukkitsblog.Util.Executable;
+import com.blogspot.debukkitsblog.Util.Server;
 
 public class MyServer extends Server {
 
 	public MyServer(int port) {
-		super(port);
+		super(port, true, true);
 	}
 
 	@Override
 	public void preStart() {
 		registerMethod("Ping", new Executable() {
-			
 			@Override
 			public void run(Datapackage msg, Socket socket) {
-				sendMessage(new Datapackage("REPLY", "Pong"), socket);				
+				sendMessage(new Datapackage("REPLY", "Pong"), socket);
 			}
 		});
 	}
@@ -75,22 +74,23 @@ EXAMPLE for a server broadcasting a chat-message to all connected clients:
 ```java
 import java.net.Socket;
 
-import com.feuerwehrhorstmar.www.Util.Client;
-import com.feuerwehrhorstmar.www.Util.Datapackage;
-import com.feuerwehrhorstmar.www.Util.Executable;
+import com.blogspot.debukkitsblog.Util.Client;
+import com.blogspot.debukkitsblog.Util.Datapackage;
+import com.blogspot.debukkitsblog.Util.Executable;
 
 public class MyClient extends Client {
 
-	public MyClient(String address, int port, int timeout, boolean autoKill) {
-		super(address, port, timeout, autoKill);
-		start();
-		
+	public MyClient(String address, int port) {
+		super(address, port, 10000, false);
+
 		registerMethod("Message", new Executable() {
 			@Override
 			public void run(Datapackage msg, Socket socket) {
-				System.out.println("Look! I got a new message from the server: " + msg.get(1));				
+				System.out.println("Look! I got a new message from the server: " + msg.get(1));
 			}
 		});
+
+		start();
 	}
 
 }
