@@ -1,10 +1,12 @@
-package com.blogspot.debukkitsblog.Util;
+package com.blogspot.debukkitsblog.Net;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.channels.IllegalBlockingModeException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -12,10 +14,10 @@ import javax.net.ssl.SSLServerSocketFactory;
 
 /**
  * A very simple-to-use Server class for Java network applications<br>
- * created on 09.03.2016 in Horstmar, NRW, Germany
+ * originally created on 09.03.2016 in Horstmar, NRW, Germany
  * 
  * @author Leonard Bienbeck 
- * @version 2.0.0
+ * @version 2.0.1
  */
 public abstract class Server {
 
@@ -30,6 +32,8 @@ public abstract class Server {
 
 	private boolean autoRegisterEveryClient;
 	private boolean secureMode;
+	
+	private boolean muted;
 	
 	/**
 	 * Executed the preStart()-Method,<br>
@@ -67,6 +71,7 @@ public abstract class Server {
 		this.clients = new ArrayList<Socket>();
 		this.port = port;
 		this.autoRegisterEveryClient = autoRegisterEveryClient;
+		this.muted = false;
 
 		if (secureMode = useSSL) {
 			System.setProperty("javax.net.ssl.keyStore", "ssc.store");
@@ -82,6 +87,18 @@ public abstract class Server {
 		if (keepConnectionAlive) {
 			startPingThread();
 		}
+	}
+	
+	/**
+	 * Sets whether the server shall print information or not. Exception and
+	 * errors are always printed.
+	 * 
+	 * @param muted
+	 *            <b>true</b> for no debug output at all, <b>false</b> for all
+	 *            output. Default is false (and all output printed).
+	 */
+	public void setMuted(boolean muted) {
+		this.muted = muted;
 	}
 
 	/**
@@ -116,6 +133,10 @@ public abstract class Server {
 	public void onSocketRemoved(Socket socket) {
 	}
 
+	/**
+	 * Starts a thread pinging every client every 30 seconds to keep the
+	 * connection alive.
+	 */
 	private void startPingThread() {
 		pingThread = new Thread(new Runnable() {
 			@Override
@@ -134,6 +155,10 @@ public abstract class Server {
 		pingThread.start();
 	}
 
+	/**
+	 * Starts a thread listening for incoming connections and Datapackages by
+	 * registered and non-registered clients
+	 */
 	private void startListening() {
 		if (listeningThread == null && server != null) {
 			listeningThread = new Thread(new Runnable() {
@@ -143,7 +168,9 @@ public abstract class Server {
 					while (server != null) {
 
 						try {
-							System.out.println("[Server] Waiting for connection" + (secureMode ? " using SSL..." : "..."));
+							if (!muted)
+								System.out.println(
+										"[Server] Waiting for connection" + (secureMode ? " using SSL..." : "..."));
 							final Socket tempSocket = server.accept();
 
 							ObjectInputStream ois = new ObjectInputStream(tempSocket.getInputStream());
@@ -151,23 +178,30 @@ public abstract class Server {
 
 							if (raw instanceof Datapackage) {
 								final Datapackage msg = (Datapackage) raw;
-								System.out.println("[Server] Message received: " + msg);
+								if (!muted)
+									System.out.println("[Server] Message received: " + msg);
 
+								INNER_LOOP:
 								for (final String current : idMethods.keySet()) {
 									if (msg.id().equalsIgnoreCase(current)) {
-										System.out
-												.println("[Server] Executing method for identifier '" + msg.id() + "'");
+										if (!muted)
+											System.out.println(
+													"[Server] Executing method for identifier '" + msg.id() + "'");
 										new Thread(new Runnable() {
 											public void run() {
 												idMethods.get(current).run(msg, tempSocket);
 											}
 										}).start();
-										break;
+										break INNER_LOOP;
 									}
 								}
 
 							}
 
+						} catch (EOFException e) {
+							e.printStackTrace();
+						} catch (IllegalBlockingModeException e) {
+							e.printStackTrace();
 						} catch (IOException e) {
 							e.printStackTrace();
 						} catch (ClassNotFoundException e) {
