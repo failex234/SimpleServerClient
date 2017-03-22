@@ -225,7 +225,7 @@ public abstract class Server {
 	 * @param socket
 	 *            The Socket the Datapackage shall be delivered to
 	 */
-	public void sendMessage(Datapackage message, Socket socket) {
+	public synchronized void sendMessage(Datapackage message, Socket socket) {
 		try {
 			// Nachricht senden
 			if (!socket.isConnected()) {
@@ -257,7 +257,7 @@ public abstract class Server {
 	 *            The Datapackage to be broadcasted
 	 * @return The number of reachable the Datapackage has been delivered to
 	 */
-	public int broadcastMessage(Datapackage message) {
+	public synchronized int broadcastMessage(Datapackage message) {
 		toBeDeleted = new ArrayList<Socket>();
 
 		// Nachricht an alle Sockets senden
@@ -313,7 +313,7 @@ public abstract class Server {
 	 * @param newClientSocket
 	 *            The Socket to be registerd
 	 */
-	public void registerClient(Socket newClientSocket) {
+	public synchronized void registerClient(Socket newClientSocket) {
 		clients.add(newClientSocket);
 	}
 
@@ -354,7 +354,7 @@ public abstract class Server {
 	/**
 	 * @return The number of connected clients
 	 */
-	public int getClientCount() {
+	public synchronized int getClientCount() {
 		return clients.size();
 	}
 
