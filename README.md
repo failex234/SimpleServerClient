@@ -1,5 +1,5 @@
 ### SimpleServerClient ###
-Offers very simple and easy-to-use Java classes for Client-Server-Client or just Server-Client applications.
+Offers very simple and easy-to-use Java classes for Client-Server-Client or just Server-Client applications doing all the work for connection setup, reconnection, timeout, keep-alive, etc. in the background.
 
 # How to use THE SERVER
 ```java
