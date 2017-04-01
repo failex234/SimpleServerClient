@@ -34,6 +34,7 @@ public class Crypter {
 			ObjectInput in = new ObjectInputStream(bis);
 			return in.readObject();
 		} catch (Exception e) {
+			e.printStackTrace();
 			return null;
 		}
 	}
