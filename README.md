@@ -96,7 +96,9 @@ public class MyClient extends Client {
 }
 ```
 
-
+If you want to handle incoming Messages or Broadcasts please register the methods _MSG_ and _BROADCAST_ with registerMethod()
+to handle these actions accordingly. REMEMBER! The first element of the datapackage in both of these methods is always the
+message that got sent and the second element is always the name of the sender.
 
 Just make your own class, e. g. MyClient extending Client, simply use the original constructor.
 Whenever you are ready for the client to login, call start(). The client will connect to the server
