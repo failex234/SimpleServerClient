@@ -96,7 +96,7 @@ public class MyClient extends Client {
 }
 ```
 
-If you want to handle incoming Messages or Broadcasts please register the methods _MSG_ and _BROADCAST_ with registerMethod()
+If you want to handle incoming Messages or Broadcasts please register the methods \_MSG\_ and \_BROADCAST\_ with registerMethod()
 to handle these actions accordingly. REMEMBER! The first element of the datapackage in both of these methods is always the
 message that got sent and the second element is always the name of the sender.
 
