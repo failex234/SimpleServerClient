@@ -15,7 +15,8 @@ import javax.net.ssl.SSLSocketFactory;
  * created on 09.03.2016 in Horstmar, NRW, Germany
  *
  * @author Leonard Bienbeck
- * @version 2.0.0
+ * @author Felix Naumann
+ * @version 2.1.0
  */
 public class Client {
 

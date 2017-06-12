@@ -14,7 +14,8 @@ import javax.net.ssl.SSLServerSocketFactory;
  * originally created on 09.03.2016 in Horstmar, NRW, Germany
  *
  * @author Leonard Bienbeck
- * @version 2.0.1
+ * @author Felix Naumann
+ * @version 2.1.0
  */
 public abstract class Server {
 
