@@ -133,7 +133,7 @@ AS CLIENT:
 
   Send messages to the server using: sendMessage(PROTOCOL, different parameters) where PROTOCOL is \_MSG\_ or \_BROADCAST\_ or your own protocol that you registered on client-side and server-side with registerMethod()
   
-  Receive replys to this message using its return value (that will be reply Datapackage)
+  Receive replies to this message using its return value (that will be reply Datapackage)
   
   Receive messages from the server using registerMethod-Executables
 
