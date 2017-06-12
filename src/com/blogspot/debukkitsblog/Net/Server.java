@@ -461,7 +461,7 @@ public abstract class Server {
 
     /**
      * Gets the Name of a client and returns it.
-     * 
+     *
      * @param client Socket of client
      * @return Name of given client
      * @throws IndexOutOfBoundsException When Client is not registered
