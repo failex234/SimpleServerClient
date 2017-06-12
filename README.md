@@ -55,20 +55,6 @@ and that's it.
 
 For more identifiers to react on, just put those lines multiple times into your preStart(). Do not forget to send
 a reply to the clients you got the Datapackge from, because it will wait until world ends for a reply.
-
-EXAMPLE for a server broadcasting a chat-message to all connected clients:
-```java
-  registerMethod("Message", new Executable() {			
-			@Override
-			public void run(Datapackage msg, Socket socket) {
-			  	System.out.println("[Message] New chat message arrived, delivering to all the clients...");
-			  	broadcastMessage(msg); //The broadcast to all the receivers
-			  	sendMessage(new Datapackage("REPLY", String.valueOf(reveicerCount)), socket); //The reply (NECESSARY! unless you want the client to block while waiting for this package)
-			  	close(socket); //Close the connection to the socket you got the Datapackage from
-			}
-	});
-```
-
 	
 # How to use THE CLIENT
 ```java
@@ -120,10 +106,12 @@ somewhere, I suggest the constructor itself.
 
 EXMAPLE for an incoming chat message from the server:
 ```java
-		registerMethod("Message", new Executable() {
+		registerMethod("_MSG_", new Executable() {
 			@Override
 			public void run(Datapackage msg, Socket socket) {
-				System.out.println("Look! I got a new message from the server: " + msg.get(1));				
+			String message = msg.get(1).toString();
+			String sender = msg.get(2).toString();
+				System.out.println("Look! I got the message \"" + message + "\" from " + sender);				
 			}
 		});
 ```
@@ -143,7 +131,7 @@ AS SERVER:
   
 AS CLIENT:
 
-  Send messages to the server using: sendMessage(different parameters)
+  Send messages to the server using: sendMessage(PROTOCOL, different parameters) where PROTOCOL is \_MSG\_ or \_BROADCAST\_
   
   Receive replys to this message using its return value (that will be reply Datapackage)
   
