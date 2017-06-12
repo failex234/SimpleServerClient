@@ -277,13 +277,13 @@ public abstract class Server {
 	}
 
 	/**
-	 * Registers an Executable to be executed by the server<br>
+	 * Registers an Executable.java to be executed by the server<br>
 	 * on an incoming Datapackage has <i>identifier</i> as its identifier.
 	 * 
 	 * @param identifier
-	 *            The identifier the Executable is triggered by
+	 *            The identifier the Executable.java is triggered by
 	 * @param executable
-	 *            The Executable to be executed on arriving identifier
+	 *            The Executable.java to be executed on arriving identifier
 	 */
 	public void registerMethod(String identifier, Executable executable) {
 		if (identifier.equalsIgnoreCase("_INTERNAL_LOGIN_") && autoRegisterEveryClient) {

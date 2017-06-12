@@ -35,7 +35,7 @@ public class Client {
 	 * Builds a network client. To login and start listening call <b>start()</b>.
 	 * <br>
 	 * Register handlers for incoming packages using<br>
-	 * registerMethod(String, Executable) in your subclass-constructor<br>
+	 * registerMethod(String, Executable.java) in your subclass-constructor<br>
 	 * <br>
 	 * The connection timeout is 10 seconds,<br>
 	 * the client will not kill itself after 30 non-successful tries of<br>
@@ -52,7 +52,7 @@ public class Client {
 	 * Builds a network client. To login and start listening call <b>start()</b>
 	 * <br>
 	 * Register handlers for incoming packages using registerMethod(String,
-	 * Executable) in your subclass-constructor<br>
+	 * Executable.java) in your subclass-constructor<br>
 	 * 
 	 * @param address
 	 *            The address to connect to, e. g. an IP or domainname
@@ -290,13 +290,13 @@ public class Client {
 	}
 
 	/**
-	 * Registers an Executable to be run on Datapackge with <i>identifier</i>
+	 * Registers an Executable.java to be run on Datapackge with <i>identifier</i>
 	 * incoming
 	 * 
 	 * @param identifier
 	 *            The identifier to be reacted on
 	 * @param executable
-	 *            The Executable ro be run
+	 *            The Executable.java ro be run
 	 */
 	public void registerMethod(String identifier, Executable executable) {
 		idMethods.put(identifier, executable);
