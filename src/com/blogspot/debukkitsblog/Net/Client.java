@@ -17,7 +17,7 @@ import javax.net.ssl.SSLSocketFactory;
  *
  * @author Leonard Bienbeck
  * @author Felix Naumann
- * @version 2.1.0
+ * @version 2.1.1
  */
 public class Client {
 
