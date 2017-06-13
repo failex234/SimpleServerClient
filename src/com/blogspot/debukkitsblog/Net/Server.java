@@ -7,6 +7,7 @@ import java.nio.channels.IllegalBlockingModeException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import javax.management.openmbean.KeyAlreadyExistsException;
 import javax.net.ssl.SSLServerSocketFactory;
 
 /**
@@ -219,7 +220,7 @@ public abstract class Server {
      */
     public synchronized void sendMessage(Datapackage message, Socket socket) {
         try {
-            // Nachricht senden
+            // Send message
             if (!socket.isConnected()) {
                 throw new Exception("Socket not connected.");
             }
@@ -228,7 +229,7 @@ public abstract class Server {
         } catch (Exception e) {
             System.err.println("[SendMessage] Fehler: " + e.getMessage());
 
-            // Bei Fehler: Socket aus Liste loeschen
+            // Delete Socket from HashMap on error
             if (toBeDeleted != null) {
                 toBeDeleted.add(socket);
             } else {
@@ -251,12 +252,12 @@ public abstract class Server {
     public synchronized int broadcastMessage(Datapackage message) {
         toBeDeleted = new ArrayList<Socket>();
 
-        // Nachricht an alle Sockets senden
+        // Send message to all sockets (clients)
         for (Socket current : clients) {
             sendMessage(message, current);
         }
 
-        // Alle Sockets, die fehlerhaft waren, im Anschluss loeschen
+        // Delete every failed socket
         for (Socket current : toBeDeleted) {
             clients.remove(current);
             onSocketRemoved(current);
@@ -279,8 +280,57 @@ public abstract class Server {
             throw new IllegalArgumentException("Identifier may not be '_INTERNAL_LOGIN_'. "
                     + "Since v1.0.1 the server automatically registers new clients. "
                     + "To react on new client registed, use the onClientRegisters() Listener by overwriting it.");
+        } else if (identifier.equalsIgnoreCase("_MSG_")) {
+            throw new IllegalArgumentException("Identifier may not be '_MSG_'. "
+                    + "This method is already taken for communication between "
+                    + "the server and the respective clients.");
+        } else if (identifier.equalsIgnoreCase("_BROADCAST_")) {
+            throw new IllegalArgumentException("Identifier may not be '_BROADCAST_'. "
+                    + "This method is already taken for communication between "
+                    + "the server and the respective clients.");
+        } else if (identifier.equalsIgnoreCase("_GET_NAME_")) {
+            throw new IllegalArgumentException("Identifier may not be '_GET_NAME_'. "
+                    + "This method is already taken for nickname exchange "
+                    + "between the server and the respective clients");
+        } else if (identifier.equalsIgnoreCase("_SET_NAME_")) {
+            throw new IllegalArgumentException("Identifier may not be '_SET_NAME_'. "
+                    + "This method is already taken for nickname exchange "
+                    + "between the server and the respective clients");
+        } else if (idMethods.containsKey(identifier)) {
+            throw new KeyAlreadyExistsException("Identifier may not be '" + identifier + "'."
+                    + "This method is already registered. If you want to "
+                    + "replace the method you have to use unregisterMethod() first!");
         } else {
             idMethods.put(identifier, executable);
+        }
+    }
+
+    /**
+     * Unregisters a Method that is registered on the server
+     *
+     * @param identifier The method to unregister
+     */
+    public void unregisterMethod(String identifier) {
+        if (identifier.equalsIgnoreCase("_INTERNAL_LOGIN_") && autoRegisterEveryClient) {
+            throw new IllegalArgumentException("Unable to unregister '_INTERNAL_LOGIN_'. " +
+                    "This method cannot be unregistered!");
+        } else if (identifier.equalsIgnoreCase("_MSG_")) {
+            throw new IllegalArgumentException("Unable to unregister '_MSG_'. " +
+                    "This method cannot be unregistered!");
+        } else if (identifier.equalsIgnoreCase("_BROADCAST_")) {
+            throw new IllegalArgumentException("Unable to unregister '_BROADCAST_'. " +
+                    "This method cannot be unregistered!");
+        } else if (identifier.equalsIgnoreCase("_GET_NAME_")) {
+            throw new IllegalArgumentException("Unable to unregister '_GET_NAME_'. " +
+                    "This method cannot be unregistered!");
+        } else if (identifier.equalsIgnoreCase("_SET_NAME_")) {
+            throw new IllegalArgumentException("Unable to unregister '_SET_NAME_'. " +
+                    "This method cannot be unregistered!");
+        } else if (!idMethods.containsKey(identifier)) {
+            throw new IllegalArgumentException("Unable to unregister '" + identifier + "'. " +
+                    "This method is not registered!");
+        } else {
+            idMethods.remove(identifier);
         }
     }
 
@@ -324,16 +374,14 @@ public abstract class Server {
                     try {
                         message = msg.get(1).toString();
 
-                    }
-                    catch(IndexOutOfBoundsException e) {
+                    } catch (IndexOutOfBoundsException e) {
                         sendMessage(new Datapackage("STATUS", "Error: No Message sent!"), socket);
                         return;
                     }
 
                     try {
                         receiver = msg.get(2).toString();
-                    }
-                    catch(IndexOutOfBoundsException e) {
+                    } catch (IndexOutOfBoundsException e) {
                         sendMessage(new Datapackage("STATUS", "Error: No Receiver sent!"), socket);
                         return;
                     }
@@ -363,8 +411,7 @@ public abstract class Server {
                     String message = "";
                     try {
                         message = msg.get(1).toString();
-                    }
-                    catch(IndexOutOfBoundsException e) {
+                    } catch (IndexOutOfBoundsException e) {
                         sendMessage(new Datapackage("STATUS", "Error: No Message sent!"), socket);
                         return;
                     }
@@ -447,7 +494,8 @@ public abstract class Server {
     /**
      * Registers the client with a name or changes the name of a
      * already registered client.
-     * @param client The client socket (to identify a user)
+     *
+     * @param client  The client socket (to identify a user)
      * @param newName The client name
      */
     public synchronized void setName(Socket client, String newName) {
@@ -473,6 +521,7 @@ public abstract class Server {
 
     /**
      * Send any Message directly to the server console
+     *
      * @param msg The message to output to console
      */
     public void log(String msg) {

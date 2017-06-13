@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.nio.channels.AlreadyConnectedException;
 import java.util.HashMap;
 
+import javax.management.openmbean.KeyAlreadyExistsException;
 import javax.net.ssl.SSLSocketFactory;
 
 /**
@@ -168,7 +169,7 @@ public class Client {
 
     private void startListening() {
 
-        // Wenn der ListeningThread lebt, nicht neu starten!
+        // Don't restart if ListeningThread is still alive!
         if (listeningThread != null && listeningThread.isAlive()) {
             return;
         }
@@ -177,17 +178,15 @@ public class Client {
             @Override
             public void run() {
 
-                // Wiederhole staendig die Prozedur:
+                // Repeat everything
                 while (true) {
                     try {
-                        // Bei fehlerhafter Verbindung, diese reparieren
+                        // Repair failed connection
                         if (loginSocket != null && !loginSocket.isConnected()) {
                             while (!loginSocket.isConnected()) {
                                 repairConnection();
                                 if (loginSocket.isConnected()) {
-                                    break; // diese, kleinere, innere
-                                    // while-Schleife! -- nicht
-                                    // while(true)
+                                    break;
                                 }
 
                                 Thread.sleep(5000);
@@ -197,12 +196,12 @@ public class Client {
 
                         onConnectionGood();
 
-                        // Auf eingehende Nachricht warten und diese bei
-                        // Eintreffen lesen
+                        // Wait for incoming messages and read them
+                        // on receive
                         ObjectInputStream ois = new ObjectInputStream(loginSocket.getInputStream());
                         Object raw = ois.readObject();
 
-                        // Nachricht auswerten
+                        // Evaluating the Message
                         if (raw instanceof Datapackage) {
                             final Datapackage msg = (Datapackage) raw;
 
@@ -226,14 +225,14 @@ public class Client {
                         onConnectionProblem();
                         System.err.println("Server offline?");
                         if ((++errorCount > 30) && autoKill) {
-                            System.err.println("Server dauerhaft nicht erreichbar, beende.");
+                            System.err.println("Cannot reach server. Exiting...");
                             System.exit(0);
                         } else {
                             repairConnection();
                         }
                     }
 
-                    // Bis hieher fehlerfrei? Dann errorCount auf Null setzen:
+                    // If no errors occured set errorCount to 0
                     errorCount = 0;
 
                 } // while true
@@ -241,7 +240,7 @@ public class Client {
             }// run
         });
 
-        // Thread starten
+        // start Thread
         listeningThread.start();
 
     }
@@ -318,7 +317,40 @@ public class Client {
      * @param executable The Executable ro be run
      */
     public void registerMethod(String identifier, Executable executable) {
-        idMethods.put(identifier, executable);
+        if (identifier.equalsIgnoreCase("NAMEREQUEST")) {
+            throw new IllegalArgumentException("Identifier may not be 'NAMEREQUEST'. "
+                    + "This method is already taken for nickname exchange "
+                    + "between the server and the client");
+        } else if (identifier.equalsIgnoreCase("STATUS")) {
+            throw new IllegalArgumentException("Identifier may not be 'STATUS'. "
+                    + "This method is already taken for command status exchange "
+                    + "between the server and the client");
+        } else if (idMethods.containsKey(identifier)) {
+            throw new KeyAlreadyExistsException("Identifier may not be '" + identifier + "'."
+                    + "This method is already registered. If you want to "
+                    + "replace the method you have to use unregisterMethod() first!");
+        } else {
+            idMethods.put(identifier, executable);
+        }
+    }
+    /**
+     * Unregisters a Method that is registered on the client
+     *
+     * @param identifier The method to unregister
+     */
+    public void unregisterMethod(String identifier) {
+        if (identifier.equalsIgnoreCase("NAMEREQUEST")) {
+            throw new IllegalArgumentException("Unable to unregister 'NAMEREQUEST'. "
+                    + "This method cannot be unregistered!");
+        } else if (identifier.equalsIgnoreCase("STATUS")) {
+            throw new IllegalArgumentException("Unable to unregister 'STATUS'. "
+                    + "This method cannot be unregistered!");
+        } else if (!idMethods.containsKey(identifier)) {
+            throw new IllegalArgumentException("Unable to unregister '" + identifier + "'. " +
+                    "This method is not registered!");
+        } else {
+            idMethods.remove(identifier);
+        }
     }
 
     /**
@@ -344,8 +376,12 @@ public class Client {
     public void onReconnect() {
     }
 
+    /**
+     * Logs a message to the console. May be appropiate for later use
+     * @param msg The message to log
+     */
     public void log(String msg) {
-
+        System.out.println(msg);
     }
 
 }
