@@ -16,7 +16,7 @@ import javax.net.ssl.SSLServerSocketFactory;
  *
  * @author Leonard Bienbeck
  * @author Felix Naumann
- * @version 2.1.1
+ * @version 2.1.2
  */
 public abstract class Server {
 
