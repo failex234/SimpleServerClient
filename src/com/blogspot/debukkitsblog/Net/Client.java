@@ -232,7 +232,7 @@ public class Client {
                         }
                     }
 
-                    // If no errors occured set errorCount to 0
+                    // If no errors occur set errorCount to 0
                     errorCount = 0;
 
                 } // while true

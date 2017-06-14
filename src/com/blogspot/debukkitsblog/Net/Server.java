@@ -178,7 +178,7 @@ public abstract class Server {
 
                                 INNER_LOOP:
                                 for (final String current : idMethods.keySet()) {
-                                    if (msg.id().equalsIgnoreCase(current)) {
+                                    if (msg.id().equalsIgnoreCase(current) || current.equalsIgnoreCase("*")) {
                                         if (!muted)
                                             System.out.println(
                                                     "[Server] Executing method for identifier '" + msg.id() + "'");
@@ -349,6 +349,7 @@ public abstract class Server {
             public void run(Datapackage msg, Socket socket) {
                 setName(socket, msg.get(1).toString());
                 sendMessage(new Datapackage("STATUS", "OK"), socket);
+                log("Client set name to " + msg.get(1));
             }
         });
 
@@ -356,6 +357,7 @@ public abstract class Server {
             @Override
             public void run(Datapackage msg, Socket socket) {
                 sendMessage(new Datapackage("NAMEREQUEST", getName(socket)), socket);
+                log("Client requested name");
             }
         });
 
@@ -364,6 +366,7 @@ public abstract class Server {
             public void run(Datapackage msg, Socket socket) {
                 if (!isRegistered(socket)) {
                     sendMessage(new Datapackage("STATUS", "Error: Please set Nickname!"), socket);
+                    log("Nickname not set! Sending status...");
                 } else {
                     String message = "";
                     String receiver = "";
@@ -525,7 +528,7 @@ public abstract class Server {
      * @param msg The message to output to console
      */
     public void log(String msg) {
-        System.out.println(msg);
+        System.out.println("[Server] " + msg);
     }
 
 }
