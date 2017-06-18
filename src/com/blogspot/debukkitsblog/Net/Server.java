@@ -224,8 +224,8 @@ public abstract class Server {
             if (!socket.isConnected()) {
                 throw new Exception("Socket not connected.");
             }
-            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-            out.writeObject(message);
+                ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                out.writeObject(message);
         } catch (Exception e) {
             System.err.println("[SendMessage] Fehler: " + e.getMessage());
 
@@ -364,6 +364,8 @@ public abstract class Server {
         idMethods.put("_MSG_", new Executable() {
             @Override
             public void run(Datapackage msg, Socket socket) {
+                log("_MSG_ Block received");
+                log ("There are currently " + clients.size() + " Clients connected!");
                 if (!isRegistered(socket)) {
                     sendMessage(new Datapackage("STATUS", "Error: Please set Nickname!"), socket);
                     log("Nickname not set! Sending status...");
@@ -422,6 +424,13 @@ public abstract class Server {
                     sendMessage(new Datapackage("STATUS", "OK"), socket);
                     broadcastMessage(new Datapackage("_BROADCAST_", sender, message));
                 }
+            }
+        });
+
+        idMethods.put("LOGIN", new Executable() {
+            @Override
+            public void run(Datapackage pack, Socket socket) {
+                registerClient(socket);
             }
         });
 

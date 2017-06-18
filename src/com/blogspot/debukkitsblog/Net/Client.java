@@ -205,6 +205,7 @@ public class Client {
                         if (raw instanceof Datapackage) {
                             final Datapackage msg = (Datapackage) raw;
 
+                            log("Datapackage received: " + msg.get(1) + ": " + msg.get(2) + ": " + msg.get(3));
                             for (final String current : idMethods.keySet()) {
                                 if (msg.id().equalsIgnoreCase(current)) {
                                     System.out.println(

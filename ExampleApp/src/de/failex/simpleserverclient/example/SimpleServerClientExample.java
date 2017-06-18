@@ -32,6 +32,7 @@ public class SimpleServerClientExample {
                 startInterpreter("server");
             } else if (args[0].equalsIgnoreCase("client")) {
                 startClient(args[1], args[2]);
+                client.sendMessage(new Datapackage("_INTERNAL_LOGIN_", "BABAB"));
                 startInterpreter("client");
             }
         }
@@ -60,6 +61,7 @@ public class SimpleServerClientExample {
                     String message1 = (new Scanner(System.in)).nextLine();
                     System.out.println("\n Broadcasting \"" + message1 + "\"...");
                     client.sendMessage(new Datapackage("_BROADCAST_", message1));
+                    startInterpreter(mode);
                     break;
                 case "setname":
                     System.out.print("Enter name to set: ");
