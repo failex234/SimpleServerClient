@@ -14,8 +14,9 @@ import java.util.Scanner;
 public class SimpleServerClientExample {
 
     static ClientStarter client;
-//pls
-    public static void main(String[] args) {
+
+    //pls
+    public static void main(String[] args) throws InterruptedException {
         if (args.length == 0) {
             System.out.println("Please start the program with the following arguments:");
             System.out.println("java -jar ExampleApp.jar server 1337 (Replace everything that is different for you)");
@@ -31,7 +32,21 @@ public class SimpleServerClientExample {
                 startServer(args[1]);
                 startInterpreter("server");
             } else if (args[0].equalsIgnoreCase("client")) {
-                startClient(args[1], args[2]);
+                new Thread(() -> {
+                    client = new ClientStarter(args[1], Integer.parseInt(args[2]));
+                    client.registerMethod("_MSG_", (datapackage, socket) -> {
+                        String message = datapackage.get(1).toString();
+                        String sender = datapackage.get(2).toString();
+                        System.out.println(sender + ": " + message);
+                    });
+
+                    client.registerMethod("_BRODACAST_", (datapackage, socket) -> {
+                        String message = datapackage.get(1).toString();
+                        String sender = datapackage.get(2).toString();
+                        System.out.println("!! BROADCAST !! " + sender + ": " + message);
+                    });
+                }).start();
+                Thread.sleep(1000);
                 client.sendMessage(new Datapackage("_INTERNAL_LOGIN_", "BABAB"));
                 startInterpreter("client");
             }
@@ -88,21 +103,4 @@ public class SimpleServerClientExample {
         ServerStarter server = new ServerStarter(Integer.parseInt(port));
     }
 
-    public static void startClient(String ip, String port) {
-        client = new ClientStarter(ip, Integer.parseInt(port));
-        client.registerMethod("_MSG_", (datapackage, socket) -> {
-            String message = datapackage.get(1).toString();
-            String sender = datapackage.get(2).toString();
-            System.out.println(sender + ": " + message);
-        });
-
-        client.registerMethod("_BRODACAST_", new Executable() {
-            @Override
-            public void run(Datapackage datapackage, Socket socket) {
-                String message = datapackage.get(1).toString();
-                String sender = datapackage.get(2).toString();
-                System.out.println("!! BROADCAST !! " + sender + ": " + message);
-            }
-        });
-    }
 }

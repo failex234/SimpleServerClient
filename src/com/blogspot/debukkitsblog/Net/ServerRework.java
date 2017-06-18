@@ -92,7 +92,7 @@ public abstract class ServerRework {
                         String cmd = (String) pkg.get(0);
 
                         log("Received package with header \"" + cmd + "\"");
-                        if (isRegistered(incomingSocket)) {
+                        if (isRegistered(incomingSocket) || cmd.equals("_INTERNAL_LOGIN_")) {
                             for (String methodname : methods.keySet()) {
                                 if (methodname.equals(cmd)) {
                                     new Thread(() -> methods.get(cmd).run(pkg, incomingSocket)).start();
