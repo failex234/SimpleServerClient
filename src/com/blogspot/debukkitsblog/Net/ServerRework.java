@@ -15,6 +15,8 @@ import java.util.HashMap;
  * This code is essentially very similar to the original one
  * but still a bit different
  *
+ * !! Not yet done !!
+ *
  * @author Felix Naumann
  * @version 0.0.1
  */
@@ -201,10 +203,12 @@ public abstract class ServerRework {
                 registerClient(socket, name);
                 onClientRegistered(socket, name);
                 log("Client \"" + socket.getInetAddress() + "\" registered with nickname \"" + name + "\"");
+                log("Sending status...");
+                sendPackage(new Datapackage("STATUS_REGISTER", "Successfully registered with nickname " + name + "!"), socket);
             } catch (Exception e) {
                 log("Client " + socket.getInetAddress().toString() + " tried to register but forgot a nickname.");
                 log("Sending status...");
-                sendPackage(new Datapackage("STATUS", "Registration failed! Nickname missing!"), socket);
+                sendPackage(new Datapackage("STATUS_REGISTER", "Registration failed! Nickname missing!"), socket);
             }
         });
 
@@ -363,19 +367,19 @@ public abstract class ServerRework {
      * @param identifier The method to unregister
      */
     public void unregisterMethod(String identifier) {
-        if (identifier.equalsIgnoreCase("_INTERNAL_LOGIN_")) {
+        if (identifier.equals("_INTERNAL_LOGIN_")) {
             throw new IllegalArgumentException("Unable to unregister '_INTERNAL_LOGIN_'. " +
                     "This method cannot be unregistered!");
-        } else if (identifier.equalsIgnoreCase("_MSG_")) {
+        } else if (identifier.equals("_MSG_")) {
             throw new IllegalArgumentException("Unable to unregister '_MSG_'. " +
                     "This method cannot be unregistered!");
-        } else if (identifier.equalsIgnoreCase("_BROADCAST_")) {
+        } else if (identifier.equals("_BROADCAST_")) {
             throw new IllegalArgumentException("Unable to unregister '_BROADCAST_'. " +
                     "This method cannot be unregistered!");
-        } else if (identifier.equalsIgnoreCase("_GET_NAME_")) {
+        } else if (identifier.equals("_GET_NAME_")) {
             throw new IllegalArgumentException("Unable to unregister '_GET_NAME_'. " +
                     "This method cannot be unregistered!");
-        } else if (identifier.equalsIgnoreCase("_SET_NAME_")) {
+        } else if (identifier.equals("_SET_NAME_")) {
             throw new IllegalArgumentException("Unable to unregister '_SET_NAME_'. " +
                     "This method cannot be unregistered!");
         } else if (!methods.containsKey(identifier)) {
