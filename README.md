@@ -1,3 +1,5 @@
+### Project rework not yet done!
+
 ### SimpleServerClient Fork by failex234 ###
 Offers very simple and easy-to-use Java classes for Client-Server-Client or just Server-Client applications doing all the work for connection setup, reconnection, timeout, keep-alive, etc. in the background.
 
@@ -7,12 +9,12 @@ import java.net.Socket;
 
 import com.blogspot.debukkitsblog.Util.Datapackage;
 import com.blogspot.debukkitsblog.Util.Executable;
-import com.blogspot.debukkitsblog.Util.Server;
+import com.blogspot.debukkitsblog.Util.ServerRework;
 
-public class MyServer extends Server {
+public class MyServer extends ServerRework {
 
-	public MyServer(int port) {
-		super(port, true, true);
+	public MyServer(int port, int timeout) {
+		super(port, timeout);
 	}
 
 	@Override
@@ -30,7 +32,7 @@ public class MyServer extends Server {
 
 
 
-Just make your own class, e. g. MyServer extending Server, simply use the original constructor and implement
+Just make your own class, e. g. MyServer extending ServerRework, simply use the original constructor and implement
 the preStart method. In the preStart method just add
 ```java
   registerMethod("IAMANIDENTIFIER", new Executable() {
@@ -55,7 +57,8 @@ and that's it.
 
 For more identifiers to react on, just put those lines multiple times into your preStart(). Do not forget to send
 a reply to the clients you got the Datapackge from, because it will wait until world ends for a reply.
-	
+
+## Currently not a reworked version!
 # How to use THE CLIENT
 ```java
 import java.net.Socket;
