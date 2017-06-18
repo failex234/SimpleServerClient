@@ -34,13 +34,21 @@ public abstract class ServerRework {
 
     public abstract void preStart();
 
-    public abstract void onClientConnected();
+    public void onClientConnected(Socket client) {
 
-    public abstract void onClientRegistered(Socket client, String name);
+    }
 
-    public abstract void onClientUnregistered();
+    public void onClientRegistered(Socket client, String name) {
 
-    public abstract void onClientDisconnected();
+    }
+
+    public void onClientUnregistered(Socket client, String name) {
+
+    }
+
+    public void onClientDisconnected(Socket client) {
+
+    }
 
 
     /**
@@ -54,6 +62,8 @@ public abstract class ServerRework {
             e.printStackTrace();
             System.exit(1);
         }
+
+        registerStandardMethods();
 
         log("Listening for connections...");
         connectionListenerThread = new Thread(() -> {
@@ -104,6 +114,13 @@ public abstract class ServerRework {
         }
     }
 
+    private void unregisterClient(Socket client) {
+        if (isRegistered(client)) {
+            clients.remove(client);
+            clientnames.remove(client);
+        }
+    }
+
     private void setName(Socket client, String name) {
         if (isRegistered(client)) {
             clientnames.replace(client, name);
@@ -134,6 +151,7 @@ public abstract class ServerRework {
         methods.put("_INTERNAL_LOGIN_", (msg, socket) -> {
             try {
                 String name = (String) msg.get(1);
+                onClientConnected(socket);
                 if (name == null) throw new NullPointerException("Nickname required!");
                 registerClient(socket, name);
                 onClientRegistered(socket, name);
@@ -215,10 +233,19 @@ public abstract class ServerRework {
             }
         });
 
+        methods.put("_INTERNAL_LOGOUT_", (pack, socket) -> {
+                onClientUnregistered(socket, getName(socket));
+                unregisterClient(socket);
+                log("Client \"" + socket.getInetAddress() + "\"(" + getName(socket) + ") just unregistered");
+                log("Sending status...");
+                sendPackage(new Datapackage("STATUS", "OK"), socket);
+                onClientDisconnected(socket);
+        });
+
     }
 
     public void sendPackage(Datapackage content, Socket receiver) {
-
+        //TODO
     }
 
     public void broadcast(Datapackage content) {
@@ -228,7 +255,7 @@ public abstract class ServerRework {
         }
     }
 
-    public void log(String msg) {
+    private void log(String msg) {
         System.out.println("[SERVER] " + msg);
     }
 }
